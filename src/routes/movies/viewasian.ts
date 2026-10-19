@@ -1,73 +1,60 @@
 import { FastifyRequest, FastifyReply, FastifyInstance, RegisterOptions } from 'fastify';
-import { MOVIES } from '@consumet/extensions';
-import { StreamingServers } from '@consumet/extensions/dist/models';
+import { PROVIDERS_LIST } from '@consumet/extensions';
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
-  const viewAsian = new MOVIES.ViewAsian();
+  const getViewAsian = () => {
+    return (
+      PROVIDERS_LIST.MOVIES?.find(
+        (p: any) => p?.name?.toLowerCase() === 'viewasian'
+      ) || PROVIDERS_LIST.MOVIES?.[0]
+    );
+  };
 
-  fastify.get('/', (_, rp) => {
-    rp.status(200).send({
-      intro:
-        "Welcome to the viewAsian provider: check out the provider's website @ https://viewAsian.to/",
+  fastify.get('/', async (_, reply) => {
+    reply.status(200).send({
+      intro: 'Welcome to the ViewAsian movie/drama provider',
       routes: ['/:query', '/info', '/watch'],
-      documentation: 'https://docs.consumet.org/#tag/viewAsian',
     });
   });
 
   fastify.get('/:query', async (request: FastifyRequest, reply: FastifyReply) => {
-    const query = decodeURIComponent((request.params as { query: string }).query);
+    const viewAsian = getViewAsian();
+    const query = (request.params as { query: string }).query;
+    const page = (request.query as { page: number }).page || 1;
 
-    const page = (request.query as { page: number }).page;
-
-    const res = await viewAsian.search(query, page);
-
-    reply.status(200).send(res);
+    try {
+      const res = await viewAsian.search(query, page);
+      reply.status(200).send(res);
+    } catch (err: any) {
+      reply.status(500).send({ message: err.message });
+    }
   });
 
   fastify.get('/info', async (request: FastifyRequest, reply: FastifyReply) => {
+    const viewAsian = getViewAsian();
     const id = (request.query as { id: string }).id;
 
-    if (typeof id === 'undefined')
-      return reply.status(400).send({
-        message: 'id is required',
-      });
-
     try {
-      const res = await viewAsian
-        .fetchMediaInfo(id)
-        .catch((err) => reply.status(404).send({ message: err }));
-
+      const res = await viewAsian.fetchMediaInfo(id);
       reply.status(200).send(res);
-    } catch (err) {
-      reply.status(500).send({
-        message:
-          'Something went wrong. Please try again later. or contact the developers.',
-      });
+    } catch (err: any) {
+      reply.status(404).send({ message: err.message });
     }
   });
 
   fastify.get('/watch', async (request: FastifyRequest, reply: FastifyReply) => {
+    const viewAsian = getViewAsian();
     const episodeId = (request.query as { episodeId: string }).episodeId;
-    const server = (request.query as { server: StreamingServers }).server;
-
-    if (typeof episodeId === 'undefined')
-      return reply.status(400).send({ message: 'episodeId is required' });
-
-    if (server && !Object.values(StreamingServers).includes(server))
-      return reply.status(400).send({ message: 'Invalid server query' });
+    const mediaId = (request.query as { mediaId: string }).mediaId;
 
     try {
-      const res = await viewAsian
-        .fetchEpisodeSources(episodeId, server)
-        .catch((err) => reply.status(404).send({ message: 'Media Not found.' }));
-
+      const res = await viewAsian.fetchEpisodeSources(episodeId, mediaId);
       reply.status(200).send(res);
-    } catch (err) {
-      reply
-        .status(500)
-        .send({ message: 'Something went wrong. Please try again later.' });
+    } catch (err: any) {
+      reply.status(404).send({ message: err.message });
     }
   });
 };
 
 export default routes;
+    
