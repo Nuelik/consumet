@@ -1,60 +1,56 @@
 import { FastifyRequest, FastifyReply, FastifyInstance, RegisterOptions } from 'fastify';
-import { MANGA } from '@consumet/extensions';
+import { PROVIDERS_LIST } from '@consumet/extensions';
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
-  const mangasee123 = new MANGA.Mangasee123();
+  const getMangasee123 = () => {
+    return (
+      PROVIDERS_LIST.MANGA?.find(
+        (p: any) => p?.name?.toLowerCase() === 'mangasee123'
+      ) || PROVIDERS_LIST.MANGA?.[0]
+    );
+  };
 
-  fastify.get('/', (_, rp) => {
-    rp.status(200).send({
-      intro: `Welcome to the mangasee123 provider: check out the provider's website @ ${mangasee123.toString.baseUrl}`,
+  fastify.get('/', async (_, reply) => {
+    reply.status(200).send({
+      intro: 'Welcome to the Mangasee123 manga provider',
       routes: ['/:query', '/info', '/read'],
-      documentation: 'https://docs.consumet.org/#tag/mangasee123',
     });
   });
 
   fastify.get('/:query', async (request: FastifyRequest, reply: FastifyReply) => {
+    const mangasee123 = getMangasee123();
     const query = (request.params as { query: string }).query;
+    const page = (request.query as { page: number }).page || 1;
 
-    const res = await mangasee123.search(query);
-
-    reply.status(200).send(res);
+    try {
+      const res = await mangasee123.search(query, page);
+      reply.status(200).send(res);
+    } catch (err: any) {
+      reply.status(500).send({ message: err.message });
+    }
   });
 
   fastify.get('/info', async (request: FastifyRequest, reply: FastifyReply) => {
+    const mangasee123 = getMangasee123();
     const id = (request.query as { id: string }).id;
 
-    if (typeof id === 'undefined')
-      return reply.status(400).send({ message: 'id is required' });
-
     try {
-      const res = await mangasee123
-        .fetchMangaInfo(id)
-        .catch((err) => reply.status(404).send({ message: err }));
-
+      const res = await mangasee123.fetchChapterList(id);
       reply.status(200).send(res);
-    } catch (err) {
-      reply
-        .status(500)
-        .send({ message: 'Something went wrong. Please try again later.' });
+    } catch (err: any) {
+      reply.status(404).send({ message: err.message });
     }
   });
 
   fastify.get('/read', async (request: FastifyRequest, reply: FastifyReply) => {
+    const mangasee123 = getMangasee123();
     const chapterId = (request.query as { chapterId: string }).chapterId;
 
-    if (typeof chapterId === 'undefined')
-      return reply.status(400).send({ message: 'chapterId is required' });
-
     try {
-      const res = await mangasee123
-        .fetchChapterPages(chapterId)
-        .catch((err: Error) => reply.status(404).send({ message: err.message }));
-
+      const res = await mangasee123.fetchPageList(chapterId);
       reply.status(200).send(res);
-    } catch (err) {
-      reply
-        .status(500)
-        .send({ message: 'Something went wrong. Please try again later.' });
+    } catch (err: any) {
+      reply.status(404).send({ message: err.message });
     }
   });
 };
