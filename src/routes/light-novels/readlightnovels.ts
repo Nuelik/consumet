@@ -1,70 +1,59 @@
 import { FastifyRequest, FastifyReply, FastifyInstance, RegisterOptions } from 'fastify';
-import { LIGHT_NOVELS } from '@consumet/extensions';
+import { PROVIDERS_LIST } from '@consumet/extensions';
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
-  const readlightnovels = new LIGHT_NOVELS.ReadLightNovels();
+  const getReadLightNovels = () => {
+    return (
+      PROVIDERS_LIST.LIGHT_NOVELS?.find(
+        (p: any) => p?.name?.toLowerCase() === 'readlightnovels'
+      ) || PROVIDERS_LIST.LIGHT_NOVELS?.[0]
+    );
+  };
 
-  fastify.get('/', (_, rp) => {
-    rp.status(200).send({
-      intro:
-        "Welcome to the readlightnovels provider: check out the provider's website @ https://readlightnovels.net/",
+  fastify.get('/', async (_, reply) => {
+    reply.status(200).send({
+      intro: 'Welcome to the ReadLightNovels provider',
       routes: ['/:query', '/info', '/read'],
-      documentation: 'https://docs.consumet.org/#tag/readlightnovels',
     });
   });
 
   fastify.get('/:query', async (request: FastifyRequest, reply: FastifyReply) => {
+    const readlightnovels = getReadLightNovels();
     const query = (request.params as { query: string }).query;
+    const page = (request.query as { page: number }).page || 1;
 
-    const res = await readlightnovels.search(query);
-
-    reply.status(200).send(res);
+    try {
+      const res = await readlightnovels.search(query, page);
+      reply.status(200).send(res);
+    } catch (err: any) {
+      reply.status(500).send({ message: err.message });
+    }
   });
 
   fastify.get('/info', async (request: FastifyRequest, reply: FastifyReply) => {
+    const readlightnovels = getReadLightNovels();
     const id = (request.query as { id: string }).id;
-    const chapterPage = (request.query as { chapterPage: number }).chapterPage;
-
-    if (typeof id === 'undefined') {
-      return reply.status(400).send({
-        message: 'id is required',
-      });
-    }
 
     try {
-      const res = await readlightnovels
-        .fetchLightNovelInfo(id, chapterPage)
-        .catch((err) => reply.status(404).send({ message: err }));
-
+      const res = await readlightnovels.fetchLightNovelInfo(id);
       reply.status(200).send(res);
-    } catch (err) {
-      reply
-        .status(500)
-        .send({ message: 'Something went wrong. Please try again later.' });
+    } catch (err: any) {
+      reply.status(404).send({ message: err.message });
     }
   });
 
   fastify.get('/read', async (request: FastifyRequest, reply: FastifyReply) => {
+    const readlightnovels = getReadLightNovels();
     const chapterId = (request.query as { chapterId: string }).chapterId;
 
-    if (typeof chapterId === 'undefined') {
-      return reply.status(400).send({
-        message: 'chapterId is required',
-      });
-    }
-
     try {
-      const res = await readlightnovels
-        .fetchChapterContent(chapterId)
-        .catch((err) => reply.status(404).send(err));
-
+      const res = await readlightnovels.fetchChapterContent(chapterId);
       reply.status(200).send(res);
-    } catch (err) {
-      reply
-        .status(500)
-        .send({ message: 'Something went wrong. Please try again later.' });
+    } catch (err: any) {
+      reply.status(404).send({ message: err.message });
     }
   });
 };
 
 export default routes;
+    
