@@ -44,13 +44,13 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
 
     if (queries.page! < 1) queries.page = 1;
 
-    const provider = PROVIDERS_LIST.ANIME.find(
-      (provider: any) => provider.toString.name === queries.animeProvider,
+    const provider = PROVIDERS_LIST.ANIME?.find(
+      (p: any) => p?.name?.toLowerCase() === queries.animeProvider.toLowerCase(),
     );
 
     try {
       if (provider) {
-        reply.redirect(`/anime/${provider.toString.name}`);
+        reply.redirect(`/anime/${provider.name.toLowerCase()}`);
       } else {
         reply
           .status(404)
@@ -63,3 +63,4 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
 };
 
 export default routes;
+  
