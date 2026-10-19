@@ -1,13 +1,10 @@
 import { Redis } from 'ioredis';
 import { FastifyRequest, FastifyReply, FastifyInstance, RegisterOptions } from 'fastify';
 import { ANIME, META, PROVIDERS_LIST } from '@consumet/extensions';
-import { Genres, SubOrSub } from '@consumet/extensions/dist/models';
-import Anilist from '@consumet/extensions/dist/providers/meta/anilist';
-import { StreamingServers } from '@consumet/extensions/dist/models';
+import { Genres, SubOrSub, StreamingServers } from '@consumet/extensions';
 
 import cache from '../../utils/cache';
 import { redis } from '../../main';
-import Gogoanime from '@consumet/extensions/dist/providers/anime/gogoanime';
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   fastify.get('/', (_, rp) => {
@@ -181,15 +178,16 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
 
       reply.status(200).send(res);
     },
-  ),
-    fastify.get('/random-anime', async (request: FastifyRequest, reply: FastifyReply) => {
-      const anilist = generateAnilistMeta();
+  );
 
-      const res = await anilist.fetchRandomAnime().catch((err) => {
-        return reply.status(404).send({ message: 'Anime not found' });
-      });
-      reply.status(200).send(res);
+  fastify.get('/random-anime', async (request: FastifyRequest, reply: FastifyReply) => {
+    const anilist = generateAnilistMeta();
+
+    const res = await anilist.fetchRandomAnime().catch(() => {
+      return reply.status(404).send({ message: 'Anime not found' });
     });
+    reply.status(200).send(res);
+  });
 
   fastify.get('/servers/:id', async (request: FastifyRequest, reply: FastifyReply) => {
     const id = (request.params as { id: string }).id;
@@ -210,7 +208,6 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     const provider = (request.query as { provider?: string }).provider;
     let fetchFiller = (request.query as { fetchFiller?: string | boolean }).fetchFiller;
     let dub = (request.query as { dub?: string | boolean }).dub;
-    const locale = (request.query as { locale?: string }).locale;
 
     let anilist = generateAnilistMeta(provider);
 
@@ -245,7 +242,6 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     }
   });
 
-  // anilist info without episodes
   fastify.get('/data/:id', async (request: FastifyRequest, reply: FastifyReply) => {
     const id = (request.params as { id: string }).id;
 
@@ -255,7 +251,6 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     reply.status(200).send(res);
   });
 
-  // anilist info with episodes
   fastify.get('/info/:id', async (request: FastifyRequest, reply: FastifyReply) => {
     const id = (request.params as { id: string }).id;
     const today = new Date();
@@ -263,7 +258,6 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     const provider = (request.query as { provider?: string }).provider;
     let fetchFiller = (request.query as { fetchFiller?: string | boolean }).fetchFiller;
     let isDub = (request.query as { dub?: string | boolean }).dub;
-    const locale = (request.query as { locale?: string }).locale;
 
     let anilist = generateAnilistMeta(provider);
 
@@ -296,7 +290,6 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     }
   });
 
-  // anilist character info
   fastify.get('/character/:id', async (request: FastifyRequest, reply: FastifyReply) => {
     const id = (request.params as { id: string }).id;
 
@@ -364,7 +357,6 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     },
   );
 
-  //anilist staff info from character id (for example: voice actors)
   fastify.get('/staff/:id', async (request: FastifyRequest, reply: FastifyReply) => {
     const id = (request.params as { id: string }).id;
 
@@ -388,9 +380,9 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   });
 };
 
-const generateAnilistMeta = (provider: string | undefined = undefined): Anilist => {
+const generateAnilistMeta = (provider: string | undefined = undefined): META.Anilist => {
   if (typeof provider !== 'undefined') {
-    let possibleProvider = PROVIDERS_LIST.ANIME.find(
+    const possibleProvider = PROVIDERS_LIST.ANIME.find(
       (p) => p.name.toLowerCase() === provider.toLocaleLowerCase(),
     );
 
@@ -399,11 +391,11 @@ const generateAnilistMeta = (provider: string | undefined = undefined): Anilist 
     });
   } else {
     // default provider is gogoanime
-    return new Anilist(new Gogoanime(), {
+    return new META.Anilist(new ANIME.Gogoanime(), {
       url: process.env.PROXY as string | string[],
     });
   }
 };
 
 export default routes;
-      
+                                  
