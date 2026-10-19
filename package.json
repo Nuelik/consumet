@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "main": "src/main.ts",
     "scripts": {
-        "start": "ts-node --transpile-only src/main.ts",
+        "start": "ts-node --transpile-only --skip-ignore src/main.ts",
         "dev": "nodemon src/main.ts",
         "build": "echo 'Build skipped'",
         "lint": "prettier --write \"src/**/*.ts\""
@@ -19,7 +19,7 @@
     "author": "prince-ao <princead@tutanota.com>",
     "license": "MIT",
     "dependencies": {
-        "@consumet/extensions": "github:Nuelik/consumet",
+        "@consumet/extensions": "^1.8.1",
         "@fastify/cors": "^8.5.0",
         "@types/node": "^18.11.17",
         "@types/ws": "^8.5.3",
