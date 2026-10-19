@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "main": "src/main.ts",
     "scripts": {
-        "start": "ts-node --transpile-only --skip-ignore src/main.ts",
+        "start": "ts-node -r tsconfig-paths/register --transpile-only --skip-ignore src/main.ts",
         "dev": "nodemon src/main.ts",
         "build": "echo 'Build skipped'",
         "lint": "prettier --write \"src/**/*.ts\""
