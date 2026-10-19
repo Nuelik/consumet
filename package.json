@@ -1,15 +1,15 @@
 {
     "name": "api.consumet.org",
     "version": "1.0.0",
-    "main": "src/main.ts",
+    "main": "dist/main.js",
     "scripts": {
-        "start": "ts-node --transpile-only src/main.ts",
+        "start": "node dist/main.js",
+        "build": "tsc --skipLibCheck",
         "dev": "nodemon src/main.ts",
-        "build": "tsc",
         "lint": "prettier --write \"src/**/*.ts\""
     },
     "engines": {
-        "node": ">=12.5.0",
+        "node": "18.x",
         "yarn": ">=1.17.3"
     },
     "repository": {
@@ -18,10 +18,6 @@
     },
     "author": "prince-ao <princead@tutanota.com>",
     "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/Nuelik/consumet/issues"
-    },
-    "homepage": "https://github.com/Nuelik/consumet#readme",
     "dependencies": {
         "@consumet/extensions": "github:Nuelik/consumet",
         "@fastify/cors": "^8.5.0",
