@@ -1,64 +1,59 @@
 import { FastifyRequest, FastifyReply, FastifyInstance, RegisterOptions } from 'fastify';
-import { MANGA } from '@consumet/extensions';
+import { PROVIDERS_LIST } from '@consumet/extensions';
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
-  const mangahere = new MANGA.MangaHere();
+  const getMangahere = () => {
+    return (
+      PROVIDERS_LIST.MANGA?.find(
+        (p: any) => p?.name?.toLowerCase() === 'mangahere'
+      ) || PROVIDERS_LIST.MANGA?.[0]
+    );
+  };
 
-  fastify.get('/', (_, rp) => {
-    rp.status(200).send({
-      intro: `Welcome to the MangaHere provider: check out the provider's website @ ${mangahere.toString.baseUrl}`,
+  fastify.get('/', async (_, reply) => {
+    reply.status(200).send({
+      intro: 'Welcome to the MangaHere provider',
       routes: ['/:query', '/info', '/read'],
-      documentation: 'https://docs.consumet.org/#tag/mangahere',
     });
   });
 
   fastify.get('/:query', async (request: FastifyRequest, reply: FastifyReply) => {
+    const mangahere = getMangahere();
     const query = (request.params as { query: string }).query;
+    const page = (request.query as { page: number }).page || 1;
 
-    const page = (request.query as { page: number }).page;
-
-    const res = await mangahere.search(query, page);
-
-    reply.status(200).send(res);
+    try {
+      const res = await mangahere.search(query, page);
+      reply.status(200).send(res);
+    } catch (err: any) {
+      reply.status(500).send({ message: err.message });
+    }
   });
 
   fastify.get('/info', async (request: FastifyRequest, reply: FastifyReply) => {
+    const mangahere = getMangahere();
     const id = (request.query as { id: string }).id;
 
-    if (typeof id === 'undefined')
-      return reply.status(400).send({ message: 'id is required' });
-
     try {
-      const res = await mangahere
-        .fetchMangaInfo(id)
-        .catch((err) => reply.status(404).send({ message: err }));
-
+      const res = await mangahere.fetchMangaInfo(id);
       reply.status(200).send(res);
-    } catch (err) {
-      reply
-        .status(500)
-        .send({ message: 'Something went wrong. Please try again later.' });
+    } catch (err: any) {
+      reply.status(404).send({ message: err.message });
     }
   });
 
   fastify.get('/read', async (request: FastifyRequest, reply: FastifyReply) => {
+    const mangahere = getMangahere();
     const chapterId = (request.query as { chapterId: string }).chapterId;
 
-    if (typeof chapterId === 'undefined')
-      return reply.status(400).send({ message: 'chapterId is required' });
-
     try {
-      const res = await mangahere
-        .fetchChapterPages(chapterId)
-        .catch((err: Error) => reply.status(404).send({ message: err.message }));
-
+      const res = await mangahere.fetchChapterPages(chapterId);
       reply.status(200).send(res);
-    } catch (err) {
-      reply
-        .status(500)
-        .send({ message: 'Something went wrong. Please try again later.' });
+    } catch (err: any) {
+      reply.status(404).send({ message: err.message });
     }
   });
 };
 
 export default routes;
+      
