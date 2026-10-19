@@ -1,60 +1,59 @@
 import { FastifyRequest, FastifyReply, FastifyInstance, RegisterOptions } from 'fastify';
-import { MANGA } from '@consumet/extensions';
+import { PROVIDERS_LIST } from '@consumet/extensions';
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
-  const mangadex = new MANGA.MangaDex();
+  const getMangadex = () => {
+    return (
+      PROVIDERS_LIST.MANGA?.find(
+        (p: any) => p?.name?.toLowerCase() === 'mangadex'
+      ) || PROVIDERS_LIST.MANGA?.[0]
+    );
+  };
 
-  fastify.get('/', (_, rp) => {
-    rp.status(200).send({
-      intro:
-        "Welcome to the mangadex provider: check out the provider's website @ https://mangadex.org/",
-      routes: ['/:query', '/info/:id', '/read/:chapterId'],
-      documentation: 'https://docs.consumet.org/#tag/mangadex',
+  fastify.get('/', async (_, reply) => {
+    reply.status(200).send({
+      intro: 'Welcome to the MangaDex provider',
+      routes: ['/:query', '/info', '/read'],
     });
   });
 
   fastify.get('/:query', async (request: FastifyRequest, reply: FastifyReply) => {
+    const mangadex = getMangadex();
     const query = (request.params as { query: string }).query;
-
-    const page = (request.query as { page: number }).page;
-
-    const res = await mangadex.search(query, page);
-
-    reply.status(200).send(res);
-  });
-
-  fastify.get('/info/:id', async (request: FastifyRequest, reply: FastifyReply) => {
-    const id = decodeURIComponent((request.params as { id: string }).id);
+    const page = (request.query as { page: number }).page || 1;
 
     try {
-      const res = await mangadex
-        .fetchMangaInfo(id)
-        .catch((err) => reply.status(404).send({ message: err }));
-
+      const res = await mangadex.search(query, page);
       reply.status(200).send(res);
-    } catch (err) {
-      reply
-        .status(500)
-        .send({ message: 'Something went wrong. Please try again later.' });
+    } catch (err: any) {
+      reply.status(500).send({ message: err.message });
     }
   });
 
-  fastify.get(
-    '/read/:chapterId',
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      const chapterId = (request.params as { chapterId: string }).chapterId;
+  fastify.get('/info', async (request: FastifyRequest, reply: FastifyReply) => {
+    const mangadex = getMangadex();
+    const id = (request.query as { id: string }).id;
 
-      try {
-        const res = await mangadex.fetchChapterPages(chapterId);
+    try {
+      const res = await mangadex.fetchMangaInfo(id);
+      reply.status(200).send(res);
+    } catch (err: any) {
+      reply.status(404).send({ message: err.message });
+    }
+  });
 
-        reply.status(200).send(res);
-      } catch (err) {
-        reply
-          .status(500)
-          .send({ message: 'Something went wrong. Please try again later.' });
-      }
-    },
-  );
+  fastify.get('/read', async (request: FastifyRequest, reply: FastifyReply) => {
+    const mangadex = getMangadex();
+    const chapterId = (request.query as { chapterId: string }).chapterId;
+
+    try {
+      const res = await mangadex.fetchChapterPages(chapterId);
+      reply.status(200).send(res);
+    } catch (err: any) {
+      reply.status(404).send({ message: err.message });
+    }
+  });
 };
 
 export default routes;
+    
