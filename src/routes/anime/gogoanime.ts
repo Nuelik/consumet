@@ -1,14 +1,18 @@
 import { FastifyRequest, FastifyReply, FastifyInstance, RegisterOptions } from 'fastify';
-import { ANIME, PROVIDERS_LIST } from '@consumet/extensions';
+import { PROVIDERS_LIST } from '@consumet/extensions';
 import { StreamingServers } from '@consumet/extensions/dist/models';
 import cache from '../../utils/cache';
 import { redis } from '../../main';
 import { Redis } from 'ioredis';
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
-  const gogoanime = PROVIDERS_LIST.ANIME.find(
-    (p) => p.name.toLowerCase() === 'gogoanime',
-  ) || new (ANIME as any).Gogoanime();
+  const getGogoanime = () => {
+    return (
+      PROVIDERS_LIST.ANIME?.find(
+        (p: any) => p.name?.toLowerCase() === 'gogoanime'
+      ) || PROVIDERS_LIST.ANIME?.[0]
+    );
+  };
 
   const redisCacheTime = 60 * 60;
   const redisPrefix = 'gogoanime:';
@@ -36,6 +40,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   });
 
   fastify.get('/:query', async (request: FastifyRequest, reply: FastifyReply) => {
+    const gogoanime = getGogoanime();
     const query = (request.params as { query: string }).query;
     const page = (request.query as { page: number }).page || 1;
 
@@ -50,6 +55,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   });
 
   fastify.get('/info/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+    const gogoanime = getGogoanime();
     const id = decodeURIComponent((request.params as { id: string }).id);
 
     try {
@@ -73,6 +79,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   });
 
   fastify.get('/genre/:genre', async (request: FastifyRequest, reply: FastifyReply) => {
+    const gogoanime = getGogoanime();
     const genre = (request.params as { genre: string }).genre;
     const page = (request.query as { page: number }).page ?? 1;
 
@@ -96,6 +103,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   });
 
   fastify.get('/genre/list', async (request: FastifyRequest, reply: FastifyReply) => {
+    const gogoanime = getGogoanime();
     try {
       const res = redis ? await cache.fetch(
         redis as Redis,
@@ -118,6 +126,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   fastify.get(
     '/watch/:episodeId',
     async (request: FastifyRequest, reply: FastifyReply) => {
+      const gogoanime = getGogoanime();
       const episodeId = (request.params as { episodeId: string }).episodeId;
       const server = (request.query as { server: StreamingServers }).server;
 
@@ -149,6 +158,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   fastify.get(
     '/servers/:episodeId',
     async (request: FastifyRequest, reply: FastifyReply) => {
+      const gogoanime = getGogoanime();
       const episodeId = (request.params as { episodeId: string }).episodeId;
 
       try {
@@ -173,6 +183,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   );
 
   fastify.get('/top-airing', async (request: FastifyRequest, reply: FastifyReply) => {
+    const gogoanime = getGogoanime();
     try {
       const page = (request.query as { page: number }).page ?? 1;
 
@@ -192,6 +203,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   });
 
   fastify.get('/movies', async (request: FastifyRequest, reply: FastifyReply) => {
+    const gogoanime = getGogoanime();
     try {
       const page = (request.query as { page: number }).page ?? 1;
 
@@ -211,6 +223,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   });
 
   fastify.get('/popular', async (request: FastifyRequest, reply: FastifyReply) => {
+    const gogoanime = getGogoanime();
     try {
       const page = (request.query as { page: number }).page ?? 1;
 
@@ -232,6 +245,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   fastify.get(
     '/recent-episodes',
     async (request: FastifyRequest, reply: FastifyReply) => {
+      const gogoanime = getGogoanime();
       try {
         const type = (request.query as { type: number }).type ?? 1;
         const page = (request.query as { page: number }).page ?? 1;
@@ -255,6 +269,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   fastify.get(
     '/anime-list',
     async (request: FastifyRequest, reply: FastifyReply) => {
+      const gogoanime = getGogoanime();
       try {
         const page = (request.query as { page: number }).page ?? 1;
 
@@ -275,6 +290,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   );
 
   fastify.get('/download', async (request: FastifyRequest, reply: FastifyReply) => {
+    const gogoanime = getGogoanime();
     try {
       const downloadLink = (request.query as { link: string }).link;
       if (!downloadLink) {
@@ -300,4 +316,4 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
 };
 
 export default routes;
-      
+    
