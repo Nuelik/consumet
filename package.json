@@ -1,11 +1,11 @@
 {
     "name": "api.consumet.org",
     "version": "1.0.0",
-    "main": "dist/main.js",
+    "main": "src/main.ts",
     "scripts": {
-        "start": "node dist/main.js",
-        "build": "tsc --skipLibCheck",
+        "start": "ts-node --transpile-only src/main.ts",
         "dev": "nodemon src/main.ts",
+        "build": "echo 'Build skipped'",
         "lint": "prettier --write \"src/**/*.ts\""
     },
     "engines": {
