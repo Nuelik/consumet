@@ -8,12 +8,12 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   
   fastify.get('/', async (_, reply) => {
     reply.status(200).send({
-      intro: 'FzMovies Custom Scraper Service',
-      usage: '/search/:query or /watch?url=...',
+      intro: 'FzMovies Scraper Service',
+      usage: '/search/:query',
     });
   });
 
-  // 1. Search Route: Auto-resolves actual movie page links from search results
+  // Search & Link Resolver Route
   fastify.get('/search/:query', async (request: FastifyRequest, reply: FastifyReply) => {
     const query = (request.params as { query: string }).query;
 
@@ -25,97 +25,67 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
           'Referer': FZ_BASE_URL,
         },
-        timeout: 10000,
+        timeout: 8000,
       });
 
       const $ = cheerio.load(data);
       const results: any[] = [];
 
-      // Parse search list links that point to individual movies
+      // Extract movie page links
       $('a').each((_, element) => {
         const title = $(element).text().trim();
         const href = $(element).attr('href');
 
-        if (href && title && (href.includes('movie') || href.includes('id=') || href.endsWith('.htm') || href.endsWith('.html'))) {
-          // Filter out navigation/footer links and keep movie titles
-          if (title.length > 2 && !title.toLowerCase().includes('home') && !title.toLowerCase().includes('search')) {
-            const absoluteUrl = href.startsWith('http') ? href : `${FZ_BASE_URL}/${href}`;
-            if (!results.some(r => r.url === absoluteUrl)) {
-              results.push({
-                title,
-                url: absoluteUrl,
-              });
-            }
+        if (href && (href.includes('movie-') || href.includes('id=') || href.endsWith('.htm') || href.endsWith('.html'))) {
+          if (title && !results.some(r => r.url === href)) {
+            results.push({
+              title: title,
+              url: href.startsWith('http') ? href : `${FZ_BASE_URL}/${href}`,
+            });
           }
         }
       });
 
+      if (results.length > 0) {
+        return reply.status(200).send({
+          keyword: query,
+          total: results.length,
+          results: results,
+        });
+      }
+
+      // Fallback direct link if scraper encounters protection
       reply.status(200).send({
         keyword: query,
-        total: results.length,
-        results: results.length > 0 ? results : [
+        total: 1,
+        results: [
           {
-            title: `Search results for "${query}"`,
-            url: `${FZ_BASE_URL}/search.php?searchkey=${encodeURIComponent(query)}`
+            title: `${query} Download Page`,
+            url: `https://fzmovie.web.za/search.php?searchkey=${encodeURIComponent(query)}`
           }
         ],
       });
 
     } catch (err: any) {
-      reply.status(500).send({
-        message: 'Failed to resolve search results',
-        error: err.message,
+      reply.status(200).send({
+        keyword: query,
+        total: 1,
+        results: [
+          {
+            title: `${query} Download Page`,
+            url: `https://fzmovie.web.za/search.php?searchkey=${encodeURIComponent(query)}`
+          }
+        ],
       });
     }
   });
 
-  // 2. Watch/Download Route: Extracts direct MP4 files from the resolved movie page
-  fastify.get('/watch', async (request: FastifyRequest, reply: FastifyReply) => {
-    const movieUrl = (request.query as { url: string }).url;
-
-    if (!movieUrl) {
-      return reply.status(400).send({ message: 'Movie URL query parameter is required (?url=...)' });
-    }
-
-    try {
-      const { data } = await axios.get(movieUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Referer': FZ_BASE_URL,
-        },
-        timeout: 10000,
-      });
-
-      const $ = cheerio.load(data);
-      const downloadLinks: any[] = [];
-
-      // Look for MP4 or download links on the movie details page
-      $('a').each((_, element) => {
-        const href = $(element).attr('href');
-        const text = $(element).text().trim();
-        
-        if (href && (href.endsWith('.mp4') || href.includes('download') || text.toLowerCase().includes('download'))) {
-          downloadLinks.push({
-            quality: text || 'MP4 Download',
-            link: href.startsWith('http') ? href : `${FZ_BASE_URL}/${href}`,
-          });
-        }
-      });
-
-      reply.status(200).send({
-        source: 'FzMovies',
-        originalUrl: movieUrl,
-        downloads: downloadLinks,
-      });
-
-    } catch (err: any) {
-      reply.status(500).send({
-        message: 'Failed to extract download links from movie page',
-        error: err.message,
-      });
-    }
+  // Direct Redirect Route (Optional: Redirects browser directly to FzMovies target page)
+  fastify.get('/download/:query', async (request: FastifyRequest, reply: FastifyReply) => {
+    const query = (request.params as { query: string }).query;
+    reply.redirect(`https://fzmovie.web.za/search.php?searchkey=${encodeURIComponent(query)}`);
   });
 };
 
 export default routes;
-        
+                                   
