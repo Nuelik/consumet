@@ -3,10 +3,12 @@ import { PROVIDERS_LIST } from '@consumet/extensions';
 
 import flixhq from './flixhq';
 import viewasian from './viewasian';
+import sflix from './sflix';
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   await fastify.register(flixhq, { prefix: '/flixhq' });
   await fastify.register(viewasian, { prefix: '/viewasian' });
+  await fastify.register(sflix, { prefix: '/sflix' });
 
   fastify.get('/', async (request: any, reply: any) => {
     reply.status(200).send('Welcome to Consumet Movies 🎬');
@@ -36,4 +38,4 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
 };
 
 export default routes;
-                          
+      
