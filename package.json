@@ -37,7 +37,6 @@
     "devDependencies": {
         "nodemon": "3.0.1",
         "prettier": "^3.0.0",
-        "@types/cheerio": "^0.31.35",
         "typescript": "5.3.3"
     }
 }
