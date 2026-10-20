@@ -4,11 +4,13 @@ import { PROVIDERS_LIST } from '@consumet/extensions';
 import flixhq from './flixhq';
 import viewasian from './viewasian';
 import sflix from './sflix';
+import fzmovies from './fzmovies'; // <--- Import your custom scraper
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   await fastify.register(flixhq, { prefix: '/flixhq' });
   await fastify.register(viewasian, { prefix: '/viewasian' });
   await fastify.register(sflix, { prefix: '/sflix' });
+  await fastify.register(fzmovies, { prefix: '/fzmovies' }); // <--- Register it here
 
   fastify.get('/', async (request: any, reply: any) => {
     reply.status(200).send('Welcome to Consumet Movies 🎬');
@@ -38,4 +40,4 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
 };
 
 export default routes;
-      
+          
